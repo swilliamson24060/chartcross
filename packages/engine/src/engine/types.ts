@@ -71,6 +71,8 @@ export interface MoveResult {
   edges: ConnectionEdge[];
   baseScore: number;
   multiplierApplied?: MultiplierType;
+  connectionScore: number;
+  tileValue: number;
   finalScore: number;
   won: boolean;
 }

@@ -5,3 +5,4 @@ export * from "./graph";
 export * from "./engine";
 export * from "./dataIndex";
 export * from "./rng";
+export * from "./tileValue";

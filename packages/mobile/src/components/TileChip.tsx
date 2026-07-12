@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import type { Tile } from "@chartcross/engine";
+import { tileValue, type Tile } from "@chartcross/engine";
 import { colors } from "../theme";
 
 interface Props {
@@ -9,10 +9,11 @@ interface Props {
   role?: "STARTER" | "END_ANCHOR";
   selected?: boolean;
   dimmed?: boolean;
+  showValue?: boolean;
   onPress?: () => void;
 }
 
-export function TileChip({ tile, size, role, selected, dimmed, onPress }: Props) {
+export function TileChip({ tile, size, role, selected, dimmed, showValue, onPress }: Props) {
   const isArtist = tile.kind === "ARTIST";
   const isWildcard = tile.kind === "WILDCARD";
   const accent = isWildcard ? colors.wildcard : isArtist ? colors.artist : colors.song;
@@ -22,6 +23,7 @@ export function TileChip({ tile, size, role, selected, dimmed, onPress }: Props)
       ? colors.artistDim
       : colors.songDim;
   const label = tile.kind === "ARTIST" ? tile.name : tile.kind === "SONG" ? tile.title : "★ WILD";
+  const value = tileValue(tile);
 
   const content = (
     <View
@@ -44,6 +46,11 @@ export function TileChip({ tile, size, role, selected, dimmed, onPress }: Props)
       >
         {label}
       </Text>
+      {showValue && value > 0 && (
+        <View style={[styles.valueBadge, { borderColor: accent }]}>
+          <Text style={styles.valueBadgeText}>{value}</Text>
+        </View>
+      )}
     </View>
   );
 
@@ -62,5 +69,23 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontWeight: "700",
     textAlign: "center",
+  },
+  valueBadge: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 3,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    backgroundColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  valueBadgeText: {
+    color: colors.textPrimary,
+    fontSize: 9,
+    fontWeight: "800",
   },
 });

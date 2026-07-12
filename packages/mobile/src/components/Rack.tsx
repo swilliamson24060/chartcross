@@ -37,6 +37,7 @@ export function Rack({ rack, selectedIndex, onSelect, onShuffle, onHint }: Props
               tile={tile}
               size={SLOT_SIZE}
               selected={selectedIndex === index}
+              showValue
               onPress={() => onSelect(index)}
             />
             <Text style={styles.kindLabel}>{tile.kind}</Text>

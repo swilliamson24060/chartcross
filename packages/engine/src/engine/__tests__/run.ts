@@ -4,6 +4,7 @@ import { GRID_SIZE } from "../types";
 import { bestConnectionReason, connectionPoints } from "../moves";
 import { isStarterConnectedToAnchor } from "../graph";
 import { GameEngine } from "../engine";
+import { decadePoints, tileValue } from "../tileValue";
 import { ArtistTile, SongTile, Dataset, WildcardTile } from "../types";
 
 let failures = 0;
@@ -168,6 +169,73 @@ console.log("\nWildcard tile checks:");
   } else {
     check("Found a seed with a wildcard in the starting rack within 2000 tries", false);
   }
+}
+
+console.log("\nTile value (decade points) checks:");
+{
+  check("2020s decade is worth 1 point", decadePoints(2023) === 1);
+  check("2010s decade is worth 2 points", decadePoints(2015) === 2);
+  check("2000s decade is worth 3 points", decadePoints(2004) === 3);
+  check("1950s decade is worth 8 points", decadePoints(1958) === 8);
+
+  const songSameDecade: SongTile = {
+    kind: "SONG",
+    id: "test-song-1",
+    title: "T",
+    performerIds: [],
+    debutYear: 2014,
+    peakYear: 2015,
+    peakPos: 1,
+  };
+  check("Song within a single decade uses that decade's points", tileValue(songSameDecade) === 2);
+
+  const songCrossesDecades: SongTile = {
+    kind: "SONG",
+    id: "test-song-2",
+    title: "T",
+    performerIds: [],
+    debutYear: 2009,
+    peakYear: 2020,
+    peakPos: 1,
+  };
+  check(
+    "Song crossing decades takes the lower (more recent) point value",
+    tileValue(songCrossesDecades) === 1,
+  );
+
+  const artistMultiDecade: ArtistTile = {
+    kind: "ARTIST",
+    id: "test-artist-1",
+    name: "A",
+    years: [1985, 1999, 2021],
+    peaks: [],
+    collaboratorIds: [],
+    songIds: [],
+  };
+  check(
+    "Artist spanning decades takes the lowest (most recent) point value",
+    tileValue(artistMultiDecade) === 1,
+  );
+
+  const wildcardForValue: WildcardTile = { kind: "WILDCARD", id: "wild-value-test" };
+  check("Wildcard has 0 tile value", tileValue(wildcardForValue) === 0);
+}
+
+console.log("\nTile value wired into engine scoring:");
+{
+  const engine = new GameEngine(dataset, 2, 777);
+  let placed = false;
+  for (let i = 0; i < engine.getState().rack.length && !placed; i++) {
+    const moves = engine.legalMovesForRackTile(i);
+    if (moves.length > 0) {
+      const before = engine.getState().score;
+      const result = engine.placeTile(i, moves[0].row, moves[0].col);
+      check("finalScore equals connectionScore + tileValue", result.finalScore === result.connectionScore + result.tileValue);
+      check("Total score increases by exactly finalScore", engine.getState().score === before + result.finalScore);
+      placed = true;
+    }
+  }
+  check("Found a move to verify tile-value scoring wiring", placed);
 }
 
 console.log(`\n${failures === 0 ? "ALL PASS" : `${failures} FAILURE(S)`}`);

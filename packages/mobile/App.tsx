@@ -69,7 +69,9 @@ export default function App() {
     }
     setSelectedIndex(null);
     refresh();
-    showToast(`+${result.finalScore} pts${result.multiplierApplied ? ` (${result.multiplierApplied})` : ""}`);
+    const breakdown = result.tileValue > 0 ? ` (${result.connectionScore} conn + ${result.tileValue} tile)` : "";
+    const multiplier = result.multiplierApplied ? ` [${result.multiplierApplied}]` : "";
+    showToast(`+${result.finalScore} pts${breakdown}${multiplier}`);
     if (result.won) {
       setTimeout(() => showToast("LEVEL COMPLETE! Connected to END ANCHOR 🎉"), 400);
     }
