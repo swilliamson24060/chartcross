@@ -1,0 +1,151 @@
+import React from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { tileValue, type Cell, type Dataset } from "@chartcross/engine";
+import { colors } from "../theme";
+
+interface Props {
+  cell: Cell | null;
+  dataset: Dataset;
+  onClose: () => void;
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  STARTER: "STARTER",
+  END_ANCHOR: "END ANCHOR",
+};
+
+export function TileInfoModal({ cell, dataset, onClose }: Props) {
+  const tile = cell?.tile;
+  if (!tile) return null;
+
+  const isArtist = tile.kind === "ARTIST";
+  const isWildcard = tile.kind === "WILDCARD";
+  const accent = isWildcard ? colors.wildcard : isArtist ? colors.artist : colors.song;
+  const value = tileValue(tile);
+
+  let title = "";
+  let rows: Array<{ label: string; value: string }> = [];
+
+  if (tile.kind === "SONG") {
+    const performerNames = tile.performerIds
+      .map((id) => dataset.artistById.get(id)?.name)
+      .filter((name): name is string => !!name);
+    title = tile.title;
+    rows = [
+      { label: "Artist", value: performerNames.join(", ") || "Unknown" },
+      {
+        label: "Year",
+        value:
+          tile.debutYear === tile.peakYear
+            ? String(tile.peakYear)
+            : `Debuted ${tile.debutYear} · Peaked ${tile.peakYear}`,
+      },
+      { label: "Peak Position", value: `#${tile.peakPos}` },
+      { label: "Point Value", value: `${value} pt${value === 1 ? "" : "s"}` },
+    ];
+  } else if (tile.kind === "ARTIST") {
+    const minYear = Math.min(...tile.years);
+    const maxYear = Math.max(...tile.years);
+    title = tile.name;
+    rows = [
+      { label: "Song", value: "—" },
+      {
+        label: "Years Active",
+        value: minYear === maxYear ? String(minYear) : `${minYear}–${maxYear}`,
+      },
+      { label: "Point Value", value: `${value} pt${value === 1 ? "" : "s"}` },
+    ];
+  } else {
+    title = "★ Wildcard";
+    rows = [{ label: "Connects to", value: "Anything, worth 0 points" }];
+  }
+
+  return (
+    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={[styles.card, { borderColor: accent }]} onPress={() => {}}>
+          <View style={styles.headerRow}>
+            <Text style={[styles.kindBadge, { color: accent, borderColor: accent }]}>
+              {tile.kind}
+              {cell?.role ? ` · ${ROLE_LABELS[cell.role]}` : ""}
+            </Text>
+            <Pressable onPress={onClose} hitSlop={10}>
+              <Text style={styles.closeText}>✕</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.title}>{title}</Text>
+          {rows.map((row) => (
+            <View key={row.label} style={styles.row}>
+              <Text style={styles.rowLabel}>{row.label}</Text>
+              <Text style={styles.rowValue}>{row.value}</Text>
+            </View>
+          ))}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(5, 8, 18, 0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: colors.headerBackground,
+    borderRadius: 12,
+    borderWidth: 2,
+    padding: 18,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  kindBadge: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  closeText: {
+    color: colors.textSecondary,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  title: {
+    color: colors.textPrimary,
+    fontSize: 20,
+    fontWeight: "800",
+    marginBottom: 14,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 5,
+    borderTopWidth: 1,
+    borderTopColor: colors.cellBorder,
+  },
+  rowLabel: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  rowValue: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: "600",
+    flexShrink: 1,
+    textAlign: "right",
+    marginLeft: 12,
+  },
+});

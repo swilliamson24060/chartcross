@@ -8,11 +8,12 @@ import {
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { GameEngine, GRID_SIZE, MoveResult } from "@chartcross/engine";
+import { Cell, GameEngine, GRID_SIZE, MoveResult } from "@chartcross/engine";
 import { dataset } from "./src/dataset";
 import { colors } from "./src/theme";
 import { BoardGrid } from "./src/components/BoardGrid";
 import { Rack } from "./src/components/Rack";
+import { TileInfoModal } from "./src/components/TileInfoModal";
 
 const LEVEL_NAMES = [
   "THE COLLABORATIVE WEB",
@@ -33,6 +34,7 @@ export default function App() {
   const [gameState, setGameState] = useState(() => engineRef.current.getState());
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
+  const [infoCell, setInfoCell] = useState<Cell | null>(null);
 
   const boardPixelWidth = Math.min(width - 24, 520);
   const cellSize = Math.floor(boardPixelWidth / GRID_SIZE);
@@ -61,6 +63,11 @@ export default function App() {
   }
 
   function handleCellPress(row: number, col: number) {
+    const cell = gameState.board[row][col];
+    if (cell.tile) {
+      setInfoCell(cell);
+      return;
+    }
     if (selectedIndex === null) return;
     const result: MoveResult = engineRef.current.placeTile(selectedIndex, row, col);
     if (!result.legal) {
@@ -148,6 +155,8 @@ export default function App() {
           </Pressable>
         )}
       </ScrollView>
+
+      <TileInfoModal cell={infoCell} dataset={dataset} onClose={() => setInfoCell(null)} />
     </View>
   );
 }
