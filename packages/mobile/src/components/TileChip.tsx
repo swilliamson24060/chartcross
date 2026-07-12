@@ -14,8 +14,14 @@ interface Props {
 
 export function TileChip({ tile, size, role, selected, dimmed, onPress }: Props) {
   const isArtist = tile.kind === "ARTIST";
-  const accent = isArtist ? colors.artist : colors.song;
-  const label = tile.kind === "ARTIST" ? tile.name : tile.title;
+  const isWildcard = tile.kind === "WILDCARD";
+  const accent = isWildcard ? colors.wildcard : isArtist ? colors.artist : colors.song;
+  const backgroundColor = isWildcard
+    ? colors.wildcardDim
+    : isArtist
+      ? colors.artistDim
+      : colors.songDim;
+  const label = tile.kind === "ARTIST" ? tile.name : tile.kind === "SONG" ? tile.title : "★ WILD";
 
   const content = (
     <View
@@ -24,11 +30,11 @@ export function TileChip({ tile, size, role, selected, dimmed, onPress }: Props)
         {
           width: size,
           height: size,
-          borderColor: role ? accent : accent,
-          backgroundColor: isArtist ? colors.artistDim : colors.songDim,
+          borderColor: accent,
+          backgroundColor,
           borderWidth: selected ? 3 : role ? 2.5 : 1.5,
           opacity: dimmed ? 0.55 : 1,
-          boxShadow: selected || role ? `0 0 6px ${accent}` : undefined,
+          boxShadow: selected || role || isWildcard ? `0 0 6px ${accent}` : undefined,
         },
       ]}
     >

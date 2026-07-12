@@ -12,10 +12,11 @@ import { buildDataIndex, DataIndex, findCandidatesFor } from "./dataIndex";
 import { isStarterConnectedToAnchor } from "./graph";
 import { bestConnectionReason, connectionPoints } from "./moves";
 import { createRng, pickRandom, randomInt } from "./rng";
-import { Board, ConnectionEdge, Dataset, GRID_SIZE, MoveResult, Tile } from "./types";
+import { Board, ConnectionEdge, Dataset, GRID_SIZE, MoveResult, Tile, WildcardTile } from "./types";
 
 const RACK_SIZE = 5;
 const CONNECTABLE_DRAW_BIAS = 0.8; // probability a refill favors a connectable tile
+const WILDCARD_DRAW_CHANCE = 0.06; // probability a refill is a wildcard instead of a real tile
 
 export interface GameState {
   board: Board;
@@ -35,6 +36,7 @@ export class GameEngine {
   private score = 0;
   private won = false;
   private levelNumber: number;
+  private wildcardCounter = 0;
 
   constructor(dataset: Dataset, levelNumber: number, seed?: number) {
     this.dataset = dataset;
@@ -109,7 +111,13 @@ export class GameEngine {
     return result;
   }
 
+  private createWildcardTile(): WildcardTile {
+    return { kind: "WILDCARD", id: `wild-${this.wildcardCounter++}` };
+  }
+
   private drawTile(): Tile | null {
+    if (this.rng() < WILDCARD_DRAW_CHANCE) return this.createWildcardTile();
+
     const useConnectable = this.rng() < CONNECTABLE_DRAW_BIAS;
     if (useConnectable) {
       const candidates = this.connectableCandidates();

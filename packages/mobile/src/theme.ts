@@ -10,6 +10,8 @@ export const colors = {
   artistDim: "#5c2244",
   song: "#2ec5ff",
   songDim: "#1e4258",
+  wildcard: "#ffe066",
+  wildcardDim: "#4a4322",
   starter: "#ff3d9a",
   endAnchor: "#2ec5ff",
   multiplierSong: "#2ec5ff",
@@ -23,8 +25,9 @@ export const colors = {
   rackSlotBorder: "#2a3660",
 };
 
-export const connectionColors: Record<"YEAR" | "PEAK" | "COLLAB", string> = {
+export const connectionColors: Record<"YEAR" | "PEAK" | "COLLAB" | "WILDCARD", string> = {
   YEAR: colors.year,
   PEAK: colors.peak,
   COLLAB: colors.collab,
+  WILDCARD: colors.wildcard,
 };

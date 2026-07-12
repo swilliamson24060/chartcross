@@ -1,10 +1,10 @@
 import { loadLocalDataset } from "../loadLocalDataset";
-import { createEmptyBoard, placeStarterAndAnchor } from "../board";
+import { createEmptyBoard, placeStarterAndAnchor, tileMatchesMultiplierType } from "../board";
 import { GRID_SIZE } from "../types";
-import { bestConnectionReason } from "../moves";
+import { bestConnectionReason, connectionPoints } from "../moves";
 import { isStarterConnectedToAnchor } from "../graph";
 import { GameEngine } from "../engine";
-import { ArtistTile, SongTile, Dataset } from "../types";
+import { ArtistTile, SongTile, Dataset, WildcardTile } from "../types";
 
 let failures = 0;
 function check(label: string, condition: boolean) {
@@ -104,10 +104,13 @@ console.log("\nGameEngine integration:");
   const illegal = engine.placeTile(0, 4, 4); // middle of empty board, not adjacent to anything placed
   check("Placing in the empty middle of the board is illegal", illegal.legal === false);
 
-  // Try every rack tile against every legal move surfaced by the engine
-  // itself; if any exist, placing one should succeed and score > 0.
+  // Try every non-wildcard rack tile against every legal move surfaced by
+  // the engine itself; if any exist, placing one should succeed and score
+  // > 0 (wildcards always score 0, so they're excluded from this check and
+  // covered separately below).
   let placedOk = false;
   for (let i = 0; i < engine.getState().rack.length && !placedOk; i++) {
+    if (engine.getState().rack[i].kind === "WILDCARD") continue;
     const moves = engine.legalMovesForRackTile(i);
     if (moves.length > 0) {
       const move = moves[0];
@@ -119,6 +122,52 @@ console.log("\nGameEngine integration:");
   }
   check("At least one legal move was available and played from the starting rack", placedOk);
   check("Rack refilled back to 5 after a placement", engine.getState().rack.length === 5);
+}
+
+console.log("\nWildcard tile checks:");
+{
+  const wildcard: WildcardTile = { kind: "WILDCARD", id: "wild-test" };
+  const brunoMars = findArtist(dataset, "Bruno Mars");
+  const uptownFunk = findSong(dataset, "Uptown Funk!", "Mark Ronson");
+
+  check("Wildcard connects to an artist", bestConnectionReason(wildcard, brunoMars) === "WILDCARD");
+  check("Wildcard connects to a song", bestConnectionReason(uptownFunk, wildcard) === "WILDCARD");
+  check("Wildcard connection is worth 0 points", connectionPoints("WILDCARD") === 0);
+  check("Wildcard never triggers a multiplier", !tileMatchesMultiplierType(wildcard, "2X_SONG"));
+  check(
+    "Wildcard never triggers CHART_BOOST either",
+    !tileMatchesMultiplierType(wildcard, "CHART_BOOST"),
+  );
+
+  // Find a seed whose starting rack actually contains a wildcard, then
+  // play it end-to-end through the real engine to prove the full path
+  // (draw -> legal move enumeration -> placement -> scoring) works.
+  let wildcardEngine: GameEngine | null = null;
+  let wildcardIndex = -1;
+  for (let seed = 0; seed < 2000 && !wildcardEngine; seed++) {
+    const candidate = new GameEngine(dataset, 1, seed);
+    const idx = candidate.getState().rack.findIndex((t) => t.kind === "WILDCARD");
+    if (idx !== -1) {
+      wildcardEngine = candidate;
+      wildcardIndex = idx;
+    }
+  }
+
+  if (wildcardEngine && wildcardIndex !== -1) {
+    const moves = wildcardEngine.legalMovesForRackTile(wildcardIndex);
+    check("A wildcard in the starting rack has legal moves", moves.length > 0);
+    if (moves.length > 0) {
+      const result = wildcardEngine.placeTile(wildcardIndex, moves[0].row, moves[0].col);
+      check("Placing a wildcard is legal", result.legal === true);
+      check("Placing a wildcard scores exactly 0", result.finalScore === 0);
+      check(
+        "All edges from the wildcard placement are WILDCARD-reasoned",
+        result.edges.every((e) => e.reason === "WILDCARD"),
+      );
+    }
+  } else {
+    check("Found a seed with a wildcard in the starting rack within 2000 tries", false);
+  }
 }
 
 console.log(`\n${failures === 0 ? "ALL PASS" : `${failures} FAILURE(S)`}`);

@@ -20,7 +20,13 @@ export interface ArtistTile {
   songIds: string[];
 }
 
-export type Tile = SongTile | ArtistTile;
+export interface WildcardTile {
+  kind: "WILDCARD";
+  id: string;
+}
+
+export type Tile = SongTile | ArtistTile | WildcardTile;
+export type MatchableTile = SongTile | ArtistTile;
 
 export type MultiplierType =
   | "2X_SONG"
@@ -41,12 +47,13 @@ export interface Cell {
 
 export type Board = Cell[][]; // board[row][col]
 
-export type ConnectionReason = "YEAR" | "PEAK" | "COLLAB";
+export type ConnectionReason = "YEAR" | "PEAK" | "COLLAB" | "WILDCARD";
 
 export const REASON_POINTS: Record<ConnectionReason, number> = {
   YEAR: 5,
   PEAK: 7,
   COLLAB: 20,
+  WILDCARD: 0,
 };
 
 export interface ConnectionEdge {

@@ -40,6 +40,7 @@ export function findCandidatesFor(
   index: DataIndex,
 ): Set<Tile> {
   const result = new Set<Tile>();
+  if (tile.kind === "WILDCARD") return result; // matches everything already, nothing to bias toward
 
   const years = tile.kind === "SONG" ? [tile.peakYear] : tile.years;
   const peaks = tile.kind === "SONG" ? [tile.peakPos] : tile.peaks;

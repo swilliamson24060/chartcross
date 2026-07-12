@@ -102,6 +102,7 @@ export function adjacentCells(board: Board, row: number, col: number): Cell[] {
 }
 
 export function tileMatchesMultiplierType(tile: Tile, type: MultiplierType): boolean {
+  if (tile.kind === "WILDCARD") return false; // no bonus of any kind for wildcards
   if (type === "CHART_BOOST") return true;
   if (type === "2X_SONG" || type === "3X_SONG") return tile.kind === "SONG";
   return tile.kind === "ARTIST";
