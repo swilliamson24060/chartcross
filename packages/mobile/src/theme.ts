@@ -1,0 +1,30 @@
+export const colors = {
+  background: "#0a1224",
+  headerBackground: "#16213f",
+  boardBackground: "#0d1730",
+  cellEmpty: "#1a2444",
+  cellBorder: "#2a3660",
+  textPrimary: "#e8ecf8",
+  textSecondary: "#8b96b8",
+  artist: "#ff3d9a",
+  artistDim: "#5c2244",
+  song: "#2ec5ff",
+  songDim: "#1e4258",
+  starter: "#ff3d9a",
+  endAnchor: "#2ec5ff",
+  multiplierSong: "#2ec5ff",
+  multiplierArtist: "#ff3d9a",
+  chartBoost: "#ff9a3d",
+  year: "#4fd67a",
+  peak: "#ffd43d",
+  collab: "#ff3d9a",
+  illegal: "#ff4d4d",
+  rackSlotBg: "#111b36",
+  rackSlotBorder: "#2a3660",
+};
+
+export const connectionColors: Record<"YEAR" | "PEAK" | "COLLAB", string> = {
+  YEAR: colors.year,
+  PEAK: colors.peak,
+  COLLAB: colors.collab,
+};

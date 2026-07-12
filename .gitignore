@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.expo/
+.expo-shared/
+*.log
+npm-debug.*
+.DS_Store
+*.tsbuildinfo
+
+# Native build artifacts if ever ejected
+ios/
+android/
+
+# Editor
+.vscode/
+.idea/
+
+# Local assistant tooling config (machine-specific, not project source)
+.claude/
+
