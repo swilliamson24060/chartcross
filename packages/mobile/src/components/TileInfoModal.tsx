@@ -1,6 +1,6 @@
 import React from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import { tileValue, type Cell, type Dataset } from "@chartcross/engine";
+import { tileValue, type Cell, type Dataset, type SongTile } from "@chartcross/engine";
 import { colors } from "../theme";
 
 interface Props {
@@ -33,26 +33,24 @@ export function TileInfoModal({ cell, dataset, onClose }: Props) {
     title = tile.title;
     rows = [
       { label: "Artist", value: performerNames.join(", ") || "Unknown" },
-      {
-        label: "Year",
-        value:
-          tile.debutYear === tile.peakYear
-            ? String(tile.peakYear)
-            : `Debuted ${tile.debutYear} · Peaked ${tile.peakYear}`,
-      },
+      { label: "Chart Year", value: String(tile.peakYear) },
       { label: "Peak Position", value: `#${tile.peakPos}` },
       { label: "Point Value", value: `${value} pt${value === 1 ? "" : "s"}` },
     ];
   } else if (tile.kind === "ARTIST") {
-    const minYear = Math.min(...tile.years);
-    const maxYear = Math.max(...tile.years);
+    // Represent the artist by their biggest hit (lowest peak position).
+    const bestSong = tile.songIds
+      .map((id) => dataset.songById.get(id))
+      .filter((s): s is SongTile => !!s)
+      .reduce<SongTile | null>((best, s) => (!best || s.peakPos < best.peakPos ? s : best), null);
     title = tile.name;
     rows = [
-      { label: "Song", value: "—" },
+      { label: "Song", value: bestSong ? bestSong.title : "—" },
       {
-        label: "Years Active",
-        value: minYear === maxYear ? String(minYear) : `${minYear}–${maxYear}`,
+        label: "Chart Year",
+        value: bestSong ? String(bestSong.peakYear) : String(Math.min(...tile.years)),
       },
+      { label: "Peak Position", value: bestSong ? `#${bestSong.peakPos}` : "—" },
       { label: "Point Value", value: `${value} pt${value === 1 ? "" : "s"}` },
     ];
   } else {
