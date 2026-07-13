@@ -1,5 +1,14 @@
-import React from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useRef, useState } from "react";
+import {
+  Modal,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { CHART_BOOST_FLAT_BONUS, decadePoints, REASON_POINTS, WILD_TILE_COST } from "@chartcross/engine";
 import { colors } from "../theme";
 
@@ -36,6 +45,29 @@ function ScoreRow({ label, value, color }: { label: string; value: string; color
 }
 
 export function HowToPlayModal({ visible, onClose }: Props) {
+  const [canScrollMore, setCanScrollMore] = useState(false);
+  const metrics = useRef({ scrollY: 0, viewportHeight: 0, contentHeight: 0 });
+
+  function recomputeScrollHint() {
+    const { scrollY, viewportHeight, contentHeight } = metrics.current;
+    setCanScrollMore(contentHeight - scrollY - viewportHeight > 8);
+  }
+
+  function handleScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    metrics.current.scrollY = e.nativeEvent.contentOffset.y;
+    recomputeScrollHint();
+  }
+
+  function handleLayout(e: { nativeEvent: { layout: { height: number } } }) {
+    metrics.current.viewportHeight = e.nativeEvent.layout.height;
+    recomputeScrollHint();
+  }
+
+  function handleContentSizeChange(_width: number, height: number) {
+    metrics.current.contentHeight = height;
+    recomputeScrollHint();
+  }
+
   if (!visible) return null;
 
   return (
@@ -49,7 +81,15 @@ export function HowToPlayModal({ visible, onClose }: Props) {
             </Pressable>
           </View>
 
-          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.scrollWrap}>
+            <ScrollView
+              style={styles.scroll}
+              showsVerticalScrollIndicator={false}
+              onScroll={handleScroll}
+              onLayout={handleLayout}
+              onContentSizeChange={handleContentSizeChange}
+              scrollEventThrottle={32}
+            >
             <Section title="GOAL">
               <Text style={styles.body}>
                 Place tiles from your rack onto the board to rack up points. Careful — the game
@@ -105,7 +145,13 @@ export function HowToPlayModal({ visible, onClose }: Props) {
               <Text style={styles.bullet}>📊 CONNECTIONS — view every scored connection on the board.</Text>
               <Text style={styles.bullet}>Tap any placed tile to see its full details.</Text>
             </Section>
-          </ScrollView>
+            </ScrollView>
+            {canScrollMore && (
+              <View style={styles.scrollHint} pointerEvents="none">
+                <Text style={styles.scrollHintText}>▼ SCROLL FOR MORE</Text>
+              </View>
+            )}
+          </View>
 
           <Pressable style={styles.button} onPress={onClose}>
             <Text style={styles.buttonText}>START PLAYING</Text>
@@ -151,8 +197,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
   },
-  scroll: {
+  scrollWrap: {
+    flex: 1,
+    position: "relative",
     marginBottom: 14,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollHint: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingTop: 18,
+    backgroundColor: "rgba(22, 33, 63, 0.95)",
+  },
+  scrollHintText: {
+    color: colors.textSecondary,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
   },
   section: {
     marginBottom: 16,

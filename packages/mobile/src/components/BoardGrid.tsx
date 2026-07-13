@@ -68,7 +68,9 @@ export function BoardGrid({ board, cellSize, highlightCells, onCellPress }: Prop
                   </View>
                 ) : null}
                 {cell.role === "STARTER" && (
-                  <Text style={[styles.roleLabel, { color: colors.starter }]}>STARTER</Text>
+                  <Text style={[styles.roleLabel, styles.roleLabelBelow, { color: colors.starter }]}>
+                    STARTER
+                  </Text>
                 )}
                 {cell.role === "END_ANCHOR" && (
                   <Text style={[styles.roleLabel, { color: colors.endAnchor }]}>END ANCHOR</Text>
@@ -110,5 +112,9 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: "700",
     letterSpacing: 0.5,
+  },
+  roleLabelBelow: {
+    top: undefined,
+    bottom: -14,
   },
 });
