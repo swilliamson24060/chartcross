@@ -16,6 +16,7 @@ import { Rack } from "./src/components/Rack";
 import { TileInfoModal } from "./src/components/TileInfoModal";
 import { ConnectionsListModal } from "./src/components/ConnectionsListModal";
 import { GameOverModal } from "./src/components/GameOverModal";
+import { HowToPlayModal } from "./src/components/HowToPlayModal";
 
 const LEVEL_NAMES = [
   "THE COLLABORATIVE WEB",
@@ -38,6 +39,7 @@ export default function App() {
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
   const [infoCell, setInfoCell] = useState<Cell | null>(null);
   const [showConnections, setShowConnections] = useState(false);
+  const [showHowToPlay, setShowHowToPlay] = useState(true);
 
   const boardPixelWidth = Math.min(width - 24, 520);
   const cellSize = Math.floor(boardPixelWidth / GRID_SIZE);
@@ -142,6 +144,13 @@ export default function App() {
         <View style={styles.headerSpacer}>
           <Pressable
             style={styles.headerIconButton}
+            onPress={() => setShowHowToPlay(true)}
+            hitSlop={8}
+          >
+            <Text style={styles.headerIconText}>❓</Text>
+          </Pressable>
+          <Pressable
+            style={styles.headerIconButton}
             onPress={() => setShowConnections(true)}
             hitSlop={8}
           >
@@ -194,6 +203,7 @@ export default function App() {
         finalScore={gameState.score}
         onRestart={handleRestart}
       />
+      <HowToPlayModal visible={showHowToPlay} onClose={() => setShowHowToPlay(false)} />
     </View>
   );
 }
@@ -213,11 +223,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerSpacer: {
-    width: 32,
-    alignItems: "flex-end",
+    width: 64,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 6,
   },
   headerSpacerLeft: {
-    alignItems: "flex-start",
+    justifyContent: "flex-start",
   },
   headerIconButton: {
     padding: 4,
