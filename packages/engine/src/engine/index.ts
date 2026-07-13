@@ -6,3 +6,5 @@ export * from "./engine";
 export * from "./dataIndex";
 export * from "./rng";
 export * from "./tileValue";
+export * from "./tileLabel";
+export * from "./connections";

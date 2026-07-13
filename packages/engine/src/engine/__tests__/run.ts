@@ -5,6 +5,7 @@ import { bestConnectionReason, connectionPoints } from "../moves";
 import { isStarterConnectedToAnchor } from "../graph";
 import { GameEngine } from "../engine";
 import { decadePoints, tileValue } from "../tileValue";
+import { getAllConnections } from "../connections";
 import { ArtistTile, SongTile, Dataset, WildcardTile } from "../types";
 
 let failures = 0;
@@ -92,6 +93,19 @@ console.log("\nBoard + adjacency + win-check:");
     "Bruno Mars connects up from Die With A Smile",
     bestConnectionReason(dieWithASmile, brunoMars) === "COLLAB",
   );
+
+  const connections = getAllConnections(board);
+  check("getAllConnections finds exactly the 2 matching adjacent pairs", connections.length === 2);
+  check(
+    "Every found connection is COLLAB worth 20 points",
+    connections.every((c) => c.reason === "COLLAB" && c.points === 20),
+  );
+  const tileIds = new Set(connections.flatMap((c) => [c.tileA.id, c.tileB.id]));
+  check(
+    "Connections reference starter, Die With A Smile, and Bruno Mars",
+    tileIds.has(starter.id) && tileIds.has(dieWithASmile.id) && tileIds.has(brunoMars.id),
+  );
+  check("Amy Winehouse (isolated anchor) has no connections yet", !tileIds.has(anchor.id));
 }
 
 console.log("\nGameEngine integration:");
@@ -236,6 +250,55 @@ console.log("\nTile value wired into engine scoring:");
     }
   }
   check("Found a move to verify tile-value scoring wiring", placed);
+}
+
+console.log("\nGame-ending status checks:");
+{
+  let wonCount = 0;
+  let stuckCount = 0;
+
+  for (let seed = 0; seed < 15; seed++) {
+    const engine = new GameEngine(dataset, 3, seed);
+    let guard = 0;
+    while (engine.getState().status === "playing" && guard++ < 200) {
+      const rack = engine.getState().rack;
+      let played = false;
+      for (let i = 0; i < rack.length; i++) {
+        const moves = engine.legalMovesForRackTile(i);
+        if (moves.length > 0) {
+          engine.placeTile(i, moves[0].row, moves[0].col);
+          played = true;
+          break;
+        }
+      }
+      if (!played) break; // status is "playing" but no move found - shouldn't happen
+    }
+
+    const finalState = engine.getState();
+    if (finalState.status === "won") {
+      wonCount++;
+      check(
+        `Seed ${seed}: won status matches board connectivity`,
+        isStarterConnectedToAnchor(finalState.board),
+      );
+      const blocked = engine.placeTile(0, 0, 0);
+      check(
+        `Seed ${seed}: further placement rejected after winning`,
+        blocked.legal === false && blocked.status === "won",
+      );
+    } else if (finalState.status === "stuck") {
+      stuckCount++;
+      check(`Seed ${seed}: stuck status matches hasAnyLegalMove()`, !engine.hasAnyLegalMove());
+      const blocked = engine.placeTile(0, 0, 0);
+      check(
+        `Seed ${seed}: further placement rejected while stuck`,
+        blocked.legal === false && blocked.status === "stuck",
+      );
+    }
+  }
+
+  console.log(`  (info) of 15 seeds: ${wonCount} won, ${stuckCount} stuck, ${15 - wonCount - stuckCount} still playing after 200 moves`);
+  check("At least one game reached a terminal state across 15 seeds", wonCount + stuckCount > 0);
 }
 
 console.log(`\n${failures === 0 ? "ALL PASS" : `${failures} FAILURE(S)`}`);

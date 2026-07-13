@@ -13,7 +13,7 @@ import { isStarterConnectedToAnchor } from "./graph";
 import { bestConnectionReason, connectionPoints } from "./moves";
 import { createRng, pickRandom, randomInt } from "./rng";
 import { tileValue } from "./tileValue";
-import { Board, ConnectionEdge, Dataset, GRID_SIZE, MoveResult, Tile, WildcardTile } from "./types";
+import { Board, ConnectionEdge, Dataset, GameStatus, GRID_SIZE, MoveResult, Tile, WildcardTile } from "./types";
 
 const RACK_SIZE = 5;
 const CONNECTABLE_DRAW_BIAS = 0.8; // probability a refill favors a connectable tile
@@ -23,7 +23,7 @@ export interface GameState {
   board: Board;
   rack: Tile[];
   score: number;
-  won: boolean;
+  status: GameStatus;
   levelNumber: number;
 }
 
@@ -35,7 +35,7 @@ export class GameEngine {
   private rack: Tile[] = [];
   private usedIds = new Set<string>();
   private score = 0;
-  private won = false;
+  private status: GameStatus = "playing";
   private levelNumber: number;
   private wildcardCounter = 0;
 
@@ -59,6 +59,23 @@ export class GameEngine {
       if (tile) this.rack.push(tile);
     }
     this.ensurePlayableRack();
+    this.updateStatus();
+  }
+
+  /**
+   * Both end states are monotonic - a connected STARTER/END_ANCHOR stays
+   * connected (tiles are never removed), and once no rack tile has a legal
+   * move, placeTile() rejects further attempts so the rack can't change
+   * again - so this can simply be recomputed from scratch each time.
+   */
+  private updateStatus(): void {
+    if (isStarterConnectedToAnchor(this.board)) {
+      this.status = "won";
+    } else if (!this.hasAnyLegalMove()) {
+      this.status = "stuck";
+    } else {
+      this.status = "playing";
+    }
   }
 
   /**
@@ -141,7 +158,7 @@ export class GameEngine {
       board: this.board,
       rack: [...this.rack],
       score: this.score,
-      won: this.won,
+      status: this.status,
       levelNumber: this.levelNumber,
     };
   }
@@ -208,9 +225,16 @@ export class GameEngine {
       connectionScore: 0,
       tileValue: 0,
       finalScore: 0,
-      won: this.won,
+      status: this.status,
     });
 
+    if (this.status !== "playing") {
+      return illegal(
+        this.status === "won"
+          ? "Game over — STARTER is already connected to END_ANCHOR."
+          : "Game over — no legal moves remain.",
+      );
+    }
     if (!tile) return illegal("No tile at that rack index.");
     if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) {
       return illegal("Cell out of bounds.");
@@ -237,7 +261,7 @@ export class GameEngine {
     this.ensurePlayableRack();
 
     this.score += finalScore;
-    this.won = this.won || isStarterConnectedToAnchor(this.board);
+    this.updateStatus();
 
     return {
       legal: true,
@@ -247,7 +271,7 @@ export class GameEngine {
       connectionScore,
       tileValue: value,
       finalScore,
-      won: this.won,
+      status: this.status,
     };
   }
 

@@ -47,6 +47,14 @@ export interface Cell {
 
 export type Board = Cell[][]; // board[row][col]
 
+/**
+ * "playing" until either the game is won (STARTER connected to END_ANCHOR
+ * by a chain of matching tiles) or stuck (no rack tile has any legal
+ * placement left). Both are terminal - once set, no further placements
+ * are accepted.
+ */
+export type GameStatus = "playing" | "won" | "stuck";
+
 export type ConnectionReason = "YEAR" | "PEAK" | "COLLAB" | "WILDCARD";
 
 export const REASON_POINTS: Record<ConnectionReason, number> = {
@@ -74,7 +82,7 @@ export interface MoveResult {
   connectionScore: number;
   tileValue: number;
   finalScore: number;
-  won: boolean;
+  status: GameStatus;
 }
 
 export interface Dataset {
