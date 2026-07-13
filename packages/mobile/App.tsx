@@ -85,7 +85,11 @@ export default function App() {
     setSelectedIndex(null);
     refresh();
     const breakdown = result.tileValue > 0 ? ` (${result.connectionScore} conn + ${result.tileValue} tile)` : "";
-    const multiplier = result.multiplierApplied ? ` [${result.multiplierApplied}]` : "";
+    const multiplier = result.multiplierApplied
+      ? ` [${result.multiplierApplied.replace(/_/g, " ")}]`
+      : result.multiplierMissed
+        ? ` [${result.multiplierMissed.replace(/_/g, " ")} bonus didn't apply]`
+        : "";
     showToast(`+${result.finalScore} pts${breakdown}${multiplier}`);
     // Terminal states (bridged/stuck) are announced via GameOverModal, driven
     // directly off gameState.status below - no toast needed for those.

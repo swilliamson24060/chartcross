@@ -83,7 +83,10 @@ export interface MoveResult {
   reason?: string;
   edges: ConnectionEdge[];
   baseScore: number;
+  /** Set only when landing on a bonus cell actually boosted the score. */
   multiplierApplied?: MultiplierType;
+  /** Set when the tile landed on a bonus cell but the bonus didn't apply (wrong tile type, wildcard, or a zero-point connection). */
+  multiplierMissed?: MultiplierType;
   connectionScore: number;
   tileValue: number;
   finalScore: number;

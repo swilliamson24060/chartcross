@@ -430,5 +430,75 @@ console.log("\nBuy wildcard blocked once game is over:");
   check("Purchase rejected once the game is over", blocked.success === false);
 }
 
+console.log("\nMultiplier applied/missed reporting checks:");
+{
+  // Sweep many seeds, greedily playing whatever move scores highest each
+  // turn, and inspect every placement that landed on a bonus cell. Confirms
+  // multiplierApplied/multiplierMissed are mutually exclusive, correctly
+  // reflect whether the bonus cell's type matched the tile, and that the
+  // score math (connectionScore vs baseScore) agrees with which one fired.
+  let sawApplied = false;
+  let sawMissed = false;
+  for (let seed = 0; seed < 60 && (!sawApplied || !sawMissed); seed++) {
+    const engine = new GameEngine(dataset, 5, seed);
+    let guard = 0;
+    while (engine.getState().status === "playing" && guard++ < 200) {
+      const rack = engine.getState().rack;
+      let played = false;
+      for (let i = 0; i < rack.length; i++) {
+        const tile = rack[i];
+        const moves = engine.legalMovesForRackTile(i);
+        if (moves.length === 0) continue;
+        const move = moves[0];
+        const cellBefore = engine.getState().board[move.row][move.col];
+        const cellMultiplier = cellBefore.multiplier;
+        const result = engine.placeTile(i, move.row, move.col);
+        played = true;
+
+        if (cellMultiplier) {
+          check(
+            "Bonus cell placement sets exactly one of multiplierApplied/multiplierMissed",
+            (result.multiplierApplied !== undefined) !== (result.multiplierMissed !== undefined),
+          );
+          if (result.multiplierApplied) {
+            sawApplied = true;
+            check("multiplierApplied matches the cell's bonus type", result.multiplierApplied === cellMultiplier);
+            check(
+              "multiplierApplied only fires when the tile type matches the bonus",
+              tileMatchesMultiplierType(tile, cellMultiplier),
+            );
+            check(
+              "connectionScore reflects the applied bonus (boosted above baseScore)",
+              result.baseScore > 0 && result.connectionScore > result.baseScore,
+            );
+          } else if (result.multiplierMissed) {
+            sawMissed = true;
+            check("multiplierMissed matches the cell's bonus type", result.multiplierMissed === cellMultiplier);
+            check(
+              "multiplierMissed fires when the tile type doesn't match the bonus, it's a wildcard, or baseScore is 0",
+              tile.kind === "WILDCARD" ||
+                !tileMatchesMultiplierType(tile, cellMultiplier) ||
+                result.baseScore === 0,
+            );
+            check(
+              "connectionScore is untouched when the bonus misses",
+              result.connectionScore === result.baseScore,
+            );
+          }
+        } else {
+          check(
+            "Non-bonus cell placement sets neither multiplierApplied nor multiplierMissed",
+            result.multiplierApplied === undefined && result.multiplierMissed === undefined,
+          );
+        }
+        break;
+      }
+      if (!played) break;
+    }
+  }
+  check("Observed at least one applied-bonus placement across the seed sweep", sawApplied);
+  check("Observed at least one missed-bonus placement across the seed sweep", sawMissed);
+}
+
 console.log(`\n${failures === 0 ? "ALL PASS" : `${failures} FAILURE(S)`}`);
 process.exit(failures === 0 ? 0 : 1);

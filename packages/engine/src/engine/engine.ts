@@ -20,6 +20,7 @@ import {
   GameStatus,
   GRID_SIZE,
   MoveResult,
+  MultiplierType,
   PurchaseResult,
   Tile,
   WILD_TILE_COST,
@@ -213,7 +214,15 @@ export class GameEngine {
     tile: Tile,
     row: number,
     col: number,
-  ): { edges: ConnectionEdge[]; baseScore: number; connectionScore: number; tileValue: number; finalScore: number } {
+  ): {
+    edges: ConnectionEdge[];
+    baseScore: number;
+    connectionScore: number;
+    tileValue: number;
+    finalScore: number;
+    multiplierApplied?: MultiplierType;
+    multiplierMissed?: MultiplierType;
+  } {
     const edges: ConnectionEdge[] = [];
     for (const neighbor of adjacentCells(this.board, row, col)) {
       if (!neighbor.tile) continue;
@@ -232,14 +241,29 @@ export class GameEngine {
     const baseScore = edges.reduce((sum, e) => sum + e.points, 0);
     const cell = this.board[row][col];
     let connectionScore = baseScore;
-    if (cell.multiplier && baseScore > 0 && tileMatchesMultiplierType(tile, cell.multiplier)) {
-      connectionScore =
-        cell.multiplier === "CHART_BOOST"
-          ? baseScore + CHART_BOOST_FLAT_BONUS
-          : baseScore * multiplierFactor(cell.multiplier);
+    let multiplierApplied: MultiplierType | undefined;
+    let multiplierMissed: MultiplierType | undefined;
+    if (cell.multiplier) {
+      if (baseScore > 0 && tileMatchesMultiplierType(tile, cell.multiplier)) {
+        connectionScore =
+          cell.multiplier === "CHART_BOOST"
+            ? baseScore + CHART_BOOST_FLAT_BONUS
+            : baseScore * multiplierFactor(cell.multiplier);
+        multiplierApplied = cell.multiplier;
+      } else {
+        multiplierMissed = cell.multiplier;
+      }
     }
     const value = tileValue(tile);
-    return { edges, baseScore, connectionScore, tileValue: value, finalScore: connectionScore + value };
+    return {
+      edges,
+      baseScore,
+      connectionScore,
+      tileValue: value,
+      finalScore: connectionScore + value,
+      multiplierApplied,
+      multiplierMissed,
+    };
   }
 
   placeTile(tileIndex: number, row: number, col: number): MoveResult {
@@ -269,11 +293,15 @@ export class GameEngine {
     const cell = this.board[row][col];
     if (cell.tile) return illegal("Cell already occupied.");
 
-    const { edges, baseScore, connectionScore, tileValue: value, finalScore } = this.evaluatePlacement(
-      tile,
-      row,
-      col,
-    );
+    const {
+      edges,
+      baseScore,
+      connectionScore,
+      tileValue: value,
+      finalScore,
+      multiplierApplied,
+      multiplierMissed,
+    } = this.evaluatePlacement(tile, row, col);
     if (edges.length === 0) {
       return illegal(
         "Must be orthogonally adjacent to a tile it shares a year, peak position, or collaboration with.",
@@ -298,7 +326,8 @@ export class GameEngine {
       legal: true,
       edges,
       baseScore,
-      multiplierApplied: cell.multiplier,
+      multiplierApplied,
+      multiplierMissed,
       connectionScore,
       tileValue: value,
       finalScore,
