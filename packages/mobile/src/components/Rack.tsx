@@ -11,7 +11,7 @@ interface Props {
   onShuffle: () => void;
 }
 
-const SLOT_SIZE = 56;
+const SLOT_SIZE = 62;
 
 export function Rack({ rack, selectedIndex, onSelect, onShuffle }: Props) {
   return (

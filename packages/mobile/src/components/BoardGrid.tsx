@@ -28,6 +28,16 @@ const MULTIPLIER_COLORS: Record<MultiplierType, string> = {
   CHART_BOOST: colors.chartBoost,
 };
 
+// 3X cells get a bolder fill, a glowing border, and bigger text so they
+// visually outrank 2X cells at a glance instead of only differing by label.
+const MULTIPLIER_TIER: Record<MultiplierType, 2 | 3 | 1> = {
+  "2X_SONG": 2,
+  "3X_SONG": 3,
+  "2X_ARTIST": 2,
+  "3X_ARTIST": 3,
+  CHART_BOOST: 1,
+};
+
 export function BoardGrid({ board, cellSize, highlightCells, onCellPress }: Props) {
   const size = cellSize * GRID_SIZE;
   return (
@@ -36,6 +46,8 @@ export function BoardGrid({ board, cellSize, highlightCells, onCellPress }: Prop
         <View key={rowIndex} style={styles.row}>
           {row.map((cell) => {
             const isHighlighted = highlightCells.has(`${cell.row},${cell.col}`);
+            const tier = cell.multiplier ? MULTIPLIER_TIER[cell.multiplier] : undefined;
+            const multiplierColor = cell.multiplier ? MULTIPLIER_COLORS[cell.multiplier] : undefined;
             return (
               <Pressable
                 key={cell.col}
@@ -45,8 +57,14 @@ export function BoardGrid({ board, cellSize, highlightCells, onCellPress }: Prop
                   {
                     width: cellSize,
                     height: cellSize,
-                    borderColor: isHighlighted ? colors.year : colors.cellBorder,
-                    borderWidth: isHighlighted ? 2 : 1,
+                    borderColor: isHighlighted
+                      ? colors.year
+                      : tier === 3
+                        ? multiplierColor
+                        : colors.cellBorder,
+                    borderWidth: isHighlighted ? 2 : tier === 3 ? 2 : 1,
+                    backgroundColor:
+                      tier === 3 ? `${multiplierColor}33` : tier === 2 ? `${multiplierColor}15` : colors.cellEmpty,
                   },
                 ]}
               >
@@ -59,7 +77,7 @@ export function BoardGrid({ board, cellSize, highlightCells, onCellPress }: Prop
                         styles.multiplierText,
                         {
                           color: MULTIPLIER_COLORS[cell.multiplier],
-                          fontSize: Math.max(7, cellSize * 0.14),
+                          fontSize: Math.max(7, cellSize * (tier === 3 ? 0.17 : 0.14)),
                         },
                       ]}
                     >
